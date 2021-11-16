@@ -7,8 +7,17 @@
 
 package com.onarandombox.MultiverseSignPortals.listeners;
 
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+
 import com.dumptruckman.minecraft.util.Logging;
 import com.onarandombox.MultiverseCore.api.MVDestination;
+import com.onarandombox.MultiverseCore.api.SafeTTeleporter;
+import com.onarandombox.MultiverseCore.destination.DestinationFactory;
+import com.onarandombox.MultiverseCore.enums.TeleportResult;
 import com.onarandombox.MultiverseCore.event.MVDebugModeEvent;
 import com.onarandombox.MultiverseCore.event.MVPlayerTouchedPortalEvent;
 import com.onarandombox.MultiverseCore.event.MVVersionEvent;
@@ -16,13 +25,6 @@ import com.onarandombox.MultiverseSignPortals.MultiverseSignPortals;
 import com.onarandombox.MultiverseSignPortals.exceptions.MoreThanOneSignFoundException;
 import com.onarandombox.MultiverseSignPortals.exceptions.NoMultiverseSignFoundException;
 import com.onarandombox.MultiverseSignPortals.utils.PortalDetector;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-
-import java.util.logging.Level;
 
 public class MVSPVersionListener implements Listener {
     private MultiverseSignPortals plugin;
@@ -63,6 +65,7 @@ public class MVSPVersionListener implements Listener {
                     // We're overriding NetherPortals.
                     Logging.fine("Player could go to destination!");
                     event.setCancelled(true);
+                    takePlayerToDestination(p, destString);
                 } else {
                     Logging.fine("Player could NOT go to destination!");
                 }
@@ -81,5 +84,26 @@ public class MVSPVersionListener implements Listener {
     @EventHandler
     public void debugModeChange(MVDebugModeEvent event) {
         Logging.setDebugLevel(event.getLevel());
+    }
+    
+    private void takePlayerToDestination(Player player, String destString) {
+        if (destString != null) {
+            Logging.finer("Found a SignPortal! (" + destString + ")");
+            SafeTTeleporter teleporter = this.plugin.getCore().getSafeTTeleporter();
+            DestinationFactory df = this.plugin.getCore().getDestFactory();
+
+            MVDestination d = df.getDestination(destString);
+            Logging.finer("Found a Destination! (" + d + ")");
+            if (true) {
+                TeleportResult result = teleporter.safelyTeleport(player, player, d);
+                if (result == TeleportResult.FAIL_UNSAFE) {
+                    player.sendMessage("The Destination was not safe! (" + ChatColor.RED + d + ChatColor.WHITE + ")");
+                }
+            } else {
+                Logging.finer("Denied permission to go to destination!");
+            }
+        } else {
+            player.sendMessage("The Destination was not set on the sign!");
+        }
     }
 }

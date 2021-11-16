@@ -7,17 +7,16 @@
 
 package com.onarandombox.MultiverseSignPortals.utils;
 
-import com.dumptruckman.minecraft.util.Logging;
-import com.onarandombox.MultiverseCore.api.MVDestination;
-import com.onarandombox.MultiverseCore.destination.InvalidDestination;
-import com.onarandombox.MultiverseSignPortals.MultiverseSignPortals;
-import com.onarandombox.MultiverseSignPortals.enums.Axis;
-import com.onarandombox.MultiverseSignPortals.exceptions.MoreThanOneSignFoundException;
-import com.onarandombox.MultiverseSignPortals.exceptions.NoMultiverseSignFoundException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Animals;
@@ -30,10 +29,13 @@ import org.bukkit.entity.Squid;
 import org.bukkit.entity.Villager;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.regex.Pattern;
+import com.dumptruckman.minecraft.util.Logging;
+import com.onarandombox.MultiverseCore.api.MVDestination;
+import com.onarandombox.MultiverseCore.destination.InvalidDestination;
+import com.onarandombox.MultiverseSignPortals.MultiverseSignPortals;
+import com.onarandombox.MultiverseSignPortals.enums.Axis;
+import com.onarandombox.MultiverseSignPortals.exceptions.MoreThanOneSignFoundException;
+import com.onarandombox.MultiverseSignPortals.exceptions.NoMultiverseSignFoundException;
 
 public class PortalDetector {
 
@@ -51,8 +53,45 @@ public class PortalDetector {
         Location portalEnd;
         List<Sign> foundSigns = null;
         if (block.getType() == Material.NETHER_PORTAL) {
+        	
+        	// iterate downwards to find some obsidian
+        	while(block.getType() == Material.NETHER_PORTAL) {
+        		block = block.getRelative(BlockFace.DOWN);
+        	}
+        	
+        	final List<Sign> foundSignsTemp = new ArrayList<>();
+        	Consumer<Block> addSign = (b) -> {
+        		if(b.getState() instanceof Sign) {
+        			foundSignsTemp.add((Sign) b.getState());
+        		}
+        	};
+        	
+        	Block bottomCenterObsidian = block;
+        	if(block.getRelative(BlockFace.EAST).getType() == Material.OBSIDIAN || block.getRelative(BlockFace.WEST).getType() == Material.OBSIDIAN) {
+        		do block = block.getRelative(BlockFace.EAST); while(block.getType() == Material.OBSIDIAN); 
+        		addSign.accept(block);
+        		
+        		block = bottomCenterObsidian;
+        		
+        		do block = block.getRelative(BlockFace.WEST); while(block.getType() == Material.OBSIDIAN);
+        		addSign.accept(block);
+        	} else {
+        		do block = block.getRelative(BlockFace.NORTH); while(block.getType() == Material.OBSIDIAN);
+        		addSign.accept(block);
+        		
+        		block = bottomCenterObsidian;
+        		
+        		do block = block.getRelative(BlockFace.SOUTH); while(block.getType() == Material.OBSIDIAN);
+        		addSign.accept(block);
+        	}
+        	
+        	if(!foundSignsTemp.isEmpty()) {
+        		foundSigns = new ArrayList<>();
+        		foundSigns.addAll(foundSignsTemp);
+        	}
+        	
             // We found the bottom 2: ##
-            if (block.getRelative(1, 0, 0).getType() == Material.NETHER_PORTAL) {
+            /*if (block.getRelative(1, 0, 0).getType() == Material.NETHER_PORTAL) {
                 portalEnd = block.getRelative(1, 0, 0).getLocation();
                 portalStart = block.getRelative(0, 2, 0).getLocation();
                 foundSigns = this.checkBlocksOutside(l.getWorld().getBlockAt(portalStart), l.getWorld().getBlockAt(portalEnd), Axis.X);
@@ -74,7 +113,7 @@ public class PortalDetector {
                 portalStart = block.getRelative(0, 2, -1).getLocation();
                 foundSigns = this.checkBlocksOutside(l.getWorld().getBlockAt(portalStart), l.getWorld().getBlockAt(portalEnd), Axis.Z);
                 Logging.finer("Found inverse Z");
-            }
+            }*/
         }
         if (foundSigns != null) {
             Logging.fine("Woo! Notch Portal!");

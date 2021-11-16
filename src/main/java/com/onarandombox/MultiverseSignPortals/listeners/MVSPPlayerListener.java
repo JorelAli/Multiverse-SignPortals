@@ -64,6 +64,8 @@ public class MVSPPlayerListener implements Listener {
                 MVSPTravelAgent travelAgent = new MVSPTravelAgent(this.plugin.getCore(), dest, event.getPlayer());
                 travelAgent.setPortalEventTravelAgent(event);
                 event.setTo(dest.getLocation(event.getPlayer()));
+                event.setCancelled(true);
+                this.takePlayerToDestination(event.getPlayer(), destString);
             }
 
         } catch (NoMultiverseSignFoundException e) {
